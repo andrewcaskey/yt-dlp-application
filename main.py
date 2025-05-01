@@ -59,22 +59,22 @@ def download_all():
         download_dir = app.config['DOWNLOAD_FOLDER']
         files = [os.path.join(download_dir, f) for f in os.listdir(download_dir) 
                 if os.path.isfile(os.path.join(download_dir, f))]
-        
+
         if not files:
             flash('No files found in downloads directory.')
             return redirect(url_for('home'))
-        
+
         # Create a zip file with all files
         memory_file = BytesIO()
         with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
             for file in files:
                 zipf.write(file, os.path.basename(file))
                 print(f"Added {file} to zip archive")
-        
+
         memory_file.seek(0)
         return send_file(memory_file, download_name='all_downloads.zip', 
                         as_attachment=True, mimetype='application/zip')
-    
+
     except Exception as e:
         flash(f'Error: {str(e)}')
         return redirect(url_for('home'))
@@ -93,8 +93,8 @@ def home():
 
             downloaded_files = []
 
-            format_type = request.form.get('format', 'mp3')
-            
+            format_type = request.form.get('format', 'mp4') # Default to mp4
+
             if format_type == 'mp3':
                 ydl_opts = {
                     'format': 'bestaudio/best',
@@ -104,20 +104,20 @@ def home():
                         'preferredquality': '192',
                     }],
                     'outtmpl': os.path.join(app.config['DOWNLOAD_FOLDER'], '%(title)s.%(ext)s'),
-                    'continue': True,
-                    'retries': 10,
-                    'fragment_retries': 10,
-                    'ignoreerrors': True,
+                    'continue': True,  # Resume partial downloads
+                    'retries': 10,     # Retry on errors
+                    'ignoreerrors': True,  # Skip on errors
+                    'no_warnings': False,
                     'quiet': True
                 }
             else:  # mp4
                 ydl_opts = {
-                    'format': 'best',
+                    'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
                     'outtmpl': os.path.join(app.config['DOWNLOAD_FOLDER'], '%(title)s.%(ext)s'),
-                    'continue': True,
-                    'retries': 10,
-                    'fragment_retries': 10,
-                    'ignoreerrors': True,
+                    'continue': True,  # Resume partial downloads
+                    'retries': 10,     # Retry on errors
+                    'ignoreerrors': True,  # Skip on errors
+                    'no_warnings': False,
                     'quiet': True
                 }
 
