@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube MP3 Downloader</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #e62117;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+        textarea {
+            padding: 10px;
+            margin-bottom: 20px;
+            font-size: 16px;
+            min-height: 100px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        button {
+            padding: 12px 15px;
+            background-color: #e62117;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #c81d11;
+        }
+        .download-all-button {
+            display: inline-block;
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .download-all-button:hover {
+            background-color: #3e8e41;
+        }
+        .instructions {
+            margin-top: 20px;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .flash-message {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .search-container {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        #search-query {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+        }
+        #search-button {
+            margin-bottom: 10px;
+        }
+        .search-results {
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: none;
+        }
+        .search-result {
+            display: flex;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        .search-result:hover {
+            background-color: #f5f5f5;
+        }
+        .search-result img {
+            width: 120px;
+            height: 68px;
+            margin-right: 10px;
+            object-fit: cover;
+        }
+        .search-result-info {
+            flex: 1;
+        }
+        .search-result-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .search-result-meta {
+            font-size: 12px;
+            color: #666;
+        }
+        .add-url-button {
+            margin-left: 10px;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .filename {
+            font-weight: bold;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>YouTube MP3 Downloader</h1>
+
+        {% if get_flashed_messages() %}
+        <div class="flash-message">
+            {% for message in get_flashed_messages() %}
+                {{ message }}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="search-container">
+            <input type="text" id="search-query" placeholder="Search YouTube videos by name">
+            <button id="search-button">Search</button>
+
+            <div id="search-results" class="search-results"></div>
+        </div>
+
+        <form method="POST" action="/">
+            <textarea id="urls-input" name="urls" placeholder="Enter YouTube URLs (one per line)" required></textarea>
+            <button type="submit">Download MP3</button>
+        </form>
+
+        <div class="instructions">
+            <h2>Instructions:</h2>
+            <ol>
+                <li>Enter one or more YouTube URLs (one per line)</li>
+                <li>Click "Download MP3" to convert and download</li>
+                <li>For multiple files, they will be packaged as a ZIP file</li>
+                <li>Make sure your browser allows pop-ups from this site</li>
+            </ol>
+            <div style="margin-top: 20px; text-align: center;">
+                <a href="/download-all" class="download-all-button">Download All Files</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchButton = document.getElementById('search-button');
+            const searchQuery = document.getElementById('search-query');
+            const searchResults = document.getElementById('search-results');
+            const urlsInput = document.getElementById('urls-input');
+
+            searchButton.addEventListener('click', function() {
+                const query = searchQuery.value.trim();
+                if (!query) return;
+
+                searchButton.disabled = true;
+                searchButton.textContent = 'Searching...';
+
+                const formData = new FormData();
+                formData.append('query', query);
+
+                fetch('/search', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    searchButton.disabled = false;
+                    searchButton.textContent = 'Search';
+
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+
+                    displaySearchResults(data.videos);
+                })
+                .catch(error => {
+                    searchButton.disabled = false;
+                    searchButton.textContent = 'Search';
+                    alert('Error searching videos: ' + error);
+                });
+            });
+
+            function displaySearchResults(videos) {
+                searchResults.innerHTML = '';
+                searchResults.style.display = videos.length > 0 ? 'block' : 'none';
+
+                videos.forEach(video => {
+                    const result = document.createElement('div');
+                    result.className = 'search-result';
+
+                    const thumbnail = video.thumbnail || 'https://via.placeholder.com/120x68';
+                    const duration = video.duration ? formatDuration(video.duration) : 'Unknown';
+                    const uploader = video.uploader || 'Unknown';
+
+                    result.innerHTML = `
+                        <img src="${thumbnail}" alt="${video.title}">
+                        <div class="search-result-info">
+                            <div class="search-result-title">${video.title}</div>
+                            <div class="search-result-meta">Duration: ${duration} | Uploader: ${uploader}</div>
+                        </div>
+                        <button class="add-url-button">Add</button>
+                    `;
+
+                    const addButton = result.querySelector('.add-url-button');
+                    addButton.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        addUrlToTextarea(video.url);
+                    });
+
+                    result.addEventListener('click', function() {
+                        addUrlToTextarea(video.url);
+                    });
+
+                    searchResults.appendChild(result);
+                });
+            }
+
+            function formatDuration(seconds) {
+                if (!seconds) return 'Unknown';
+                const minutes = Math.floor(seconds / 60);
+                seconds = seconds % 60;
+                return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            function addUrlToTextarea(url) {
+                const currentUrls = urlsInput.value.trim();
+                if (currentUrls) {
+                    urlsInput.value = currentUrls + '\n' + url;
+                } else {
+                    urlsInput.value = url;
+                }
+            }
+
+            // Allow searching with Enter key
+            searchQuery.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchButton.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
