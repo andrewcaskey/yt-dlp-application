@@ -93,20 +93,33 @@ def home():
 
             downloaded_files = []
 
-            ydl_opts = {
-                'format': 'bestaudio/best',
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '192',
-                }],
-                'outtmpl': os.path.join(app.config['DOWNLOAD_FOLDER'], '%(title)s.%(ext)s'),
-                'continue': True,  # Resume partial downloads
-                'retries': 10,     # Retry on errors
-                'fragment_retries': 10,
-                'ignoreerrors': True,
-                'quiet': True
-            }
+            format_type = request.form.get('format', 'mp3')
+            
+            if format_type == 'mp3':
+                ydl_opts = {
+                    'format': 'bestaudio/best',
+                    'postprocessors': [{
+                        'key': 'FFmpegExtractAudio',
+                        'preferredcodec': 'mp3',
+                        'preferredquality': '192',
+                    }],
+                    'outtmpl': os.path.join(app.config['DOWNLOAD_FOLDER'], '%(title)s.%(ext)s'),
+                    'continue': True,
+                    'retries': 10,
+                    'fragment_retries': 10,
+                    'ignoreerrors': True,
+                    'quiet': True
+                }
+            else:  # mp4
+                ydl_opts = {
+                    'format': 'best',
+                    'outtmpl': os.path.join(app.config['DOWNLOAD_FOLDER'], '%(title)s.%(ext)s'),
+                    'continue': True,
+                    'retries': 10,
+                    'fragment_retries': 10,
+                    'ignoreerrors': True,
+                    'quiet': True
+                }
 
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 for url in urls:

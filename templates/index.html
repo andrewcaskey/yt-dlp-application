@@ -134,6 +134,13 @@
             font-weight: bold;
             word-break: break-all;
         }
+        .format-select {
+            margin-bottom: 20px;
+        }
+        .format-select label {
+            margin-right: 10px;
+        }
+
     </style>
 </head>
 <body>
@@ -157,14 +164,19 @@
 
         <form method="POST" action="/">
             <textarea id="urls-input" name="urls" placeholder="Enter YouTube URLs (one per line)" required></textarea>
-            <button type="submit">Download MP3</button>
+            <div class="format-select">
+                <label><input type="radio" name="format" value="mp3" checked> MP3</label>
+                <label><input type="radio" name="format" value="mp4"> MP4</label>
+            </div>
+            <button type="submit">Download</button>
         </form>
 
         <div class="instructions">
             <h2>Instructions:</h2>
             <ol>
                 <li>Enter one or more YouTube URLs (one per line)</li>
-                <li>Click "Download MP3" to convert and download</li>
+                <li>Select the desired format (MP3 or MP4)</li>
+                <li>Click "Download" to convert and download</li>
                 <li>For multiple files, they will be packaged as a ZIP file</li>
                 <li>Make sure your browser allows pop-ups from this site</li>
             </ol>
